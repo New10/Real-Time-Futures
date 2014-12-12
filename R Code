@@ -1,0 +1,278 @@
+###########################
+# File: Grab CME Data
+# John Newton 
+###########################
+
+
+#Libraries
+library("XML")
+library("ggplot2")
+library("stringr")
+
+#Function to remove tick labels
+
+remove_tick = function(x){
+  x1 <- str_trim(sapply(str_split(x, "\\'",2), "[",1))
+  x2 <- str_trim(sapply(str_split(x, "\\'",2), "[",2))
+  x2 <- str_trim(sapply(str_split(x2, "\\ ",2), "[",1))
+  x<-(as.numeric(x1)+as.numeric(x2)*.0025)/100;
+  x<-as.data.frame(x)
+  x[is.na(x)]<-0
+  print(x)
+}
+
+
+remove_milk_tick = function(y){
+  y1 <- str_trim(sapply(str_split(y, "\\.",2), "[",1))
+  y2 <- str_trim(sapply(str_split(y, "\\.",2), "[",2))
+  y2 <- str_trim(sapply(str_split(y2, "\\ ",2), "[",1))
+  y<-as.numeric(y1)+as.numeric(y2)/100
+  y<-as.data.frame(y)
+  y[is.na(y)]<-0
+  print(y)
+}
+
+
+
+remove_cent_tick = function(y){
+  y1 <- str_trim(sapply(str_split(y, "\\.",2), "[",1))
+  y2 <- str_trim(sapply(str_split(y, "\\.",2), "[",2))
+  y2 <- str_trim(sapply(str_split(y2, "\\ ",2), "[",1))
+  y<-as.numeric(y1)+as.numeric(y2)/1000
+  y<-as.data.frame(y)
+  y[is.na(y)]<-0
+  print(y)
+}
+
+######################################################
+#Scrape corn futures prices 
+######################################################
+
+
+corn_xml<-"http://www.cmegroup.com/trading/agricultural/grain-and-oilseed/corn.html"
+  
+corn <- readHTMLTable(corn_xml, stringsAsFactors = FALSE)
+corn <- do.call(rbind, corn)
+names(corn) <- c("Year_Month","Option","Chart","Price","Change","Prior","Open","High","Low","Volume","Limit","Time Updated")
+corn$Price<-remove_tick(corn$Price)
+corn$Prior<-remove_tick(corn$Prior)
+Date<-as.POSIXlt(as.Date(corn$Year_Month, "%B%d%Y"))
+Date$year<-Date$year+2000
+Date<-as.Date(Date)-19
+corn<-data.frame(Date, corn$Price, corn$Prior)
+names(corn)<-c("Date", "Price", "Prior")
+
+j<-dim(corn)[1]
+
+for(i in 1:j){
+  
+  if (corn$Price[i]==0){
+    corn$Price[i]<-corn$Prior[i]
+  }
+}
+
+corn$Change<-corn$Price-corn$Prior
+corn<-corn[which(corn$Price >0), ]
+corn
+
+######################################################
+# Plot the CME corn prices
+######################################################
+
+plot1<-ggplot(data=corn, aes(x=Date, y=Price))+geom_bar(fill="grey",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/bu.") +ggtitle("CME Corn Futures Price") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+plot2<-ggplot(data=corn, aes(x=Date, y=Change))+geom_bar(fill="red",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/bu.") +ggtitle("CME Corn Futures Price Change") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+theplot<-arrangeGrob(plot1,plot2, ncol=2)
+
+theplot
+
+
+
+
+
+######################################################
+#Scrape soybean futures prices 
+######################################################
+
+
+soybean_xml<-"http://www.cmegroup.com/trading/agricultural/grain-and-oilseed/soybean.html"
+
+soybean <- readHTMLTable(soybean_xml, stringsAsFactors = FALSE)
+soybean <- do.call(rbind, soybean)
+names(soybean) <- c("Year_Month","Option","Chart","Price","Change","Prior","Open","High","Low","Volume","Limit","Time Updated")
+soybean$Price<-remove_tick(soybean$Price)
+soybean$Prior<-remove_tick(soybean$Prior)
+Date<-as.POSIXlt(as.Date(soybean$Year_Month, "%B%d%Y"))
+Date$year<-Date$year+2000
+Date<-as.Date(Date)-19
+soybean<-data.frame(Date, soybean$Price, soybean$Prior)
+names(soybean)<-c("Date", "Price", "Prior")
+
+j<-dim(soybean)[1]
+
+for(i in 1:j){
+  
+  if (soybean$Price[i]==0){
+    soybean$Price[i]<-soybean$Prior[i]
+  }
+}
+
+soybean$Change<-soybean$Price-soybean$Prior
+soybean<-soybean[which(soybean$Price >0), ]
+soybean
+
+######################################################
+# Plot the CME soybean prices
+######################################################
+
+plot3<-ggplot(data=soybean, aes(x=Date, y=Price))+geom_bar(fill="grey",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/bu.") +ggtitle("CME Soybean Futures Price") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+plot4<-ggplot(data=soybean, aes(x=Date, y=Change))+geom_bar(fill="red",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/bu.") +ggtitle("CME Soybean Futures Price Change") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+
+
+
+######################################################
+#Scrape Cl III futures prices 
+######################################################
+
+
+ciiimilk_xml<-"http://www.cmegroup.com/trading/agricultural/dairy/class-iii-milk.html"
+
+ciiimilk <- readHTMLTable(ciiimilk_xml, stringsAsFactors = FALSE)
+ciiimilk <- do.call(rbind, ciiimilk)
+names(ciiimilk) <- c("Year_Month","Option","Chart","Price","Change","Prior","Open","High","Low","Volume","Limit","Time Updated")
+ciiimilk$Price<-remove_milk_tick(ciiimilk$Price)
+ciiimilk$Prior<-remove_milk_tick(ciiimilk$Prior)
+Date<-as.POSIXlt(as.Date(ciiimilk$Year_Month, "%B%d%Y"))
+Date$year<-Date$year+2000
+Date<-as.Date(Date)-19
+ciiimilk<-data.frame(Date, ciiimilk$Price, ciiimilk$Prior)
+names(ciiimilk)<-c("Date", "Price", "Prior")
+
+j<-dim(ciiimilk)[1]
+
+for(i in 1:j){
+  
+  if (ciiimilk$Price[i]==0){
+    ciiimilk$Price[i]<-ciiimilk$Prior[i]
+    }
+}
+
+ciiimilk$Change<-ciiimilk$Price-ciiimilk$Prior
+ciiimilk<-ciiimilk[which(ciiimilk$Price >0), ]
+ciiimilk
+
+
+######################################################
+# Plot the Class III Prices
+######################################################
+
+plot5<-ggplot(data=ciiimilk, aes(x=Date, y=Price))+geom_bar(fill="grey",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/cwt.") +ggtitle("CME Class III Futures Price") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+plot6<-ggplot(data=ciiimilk, aes(x=Date, y=Change))+geom_bar(fill="red",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/bu.") +ggtitle("CME Class III Futures Price Change") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+
+
+
+######################################################
+#Scrape Cl IV futures prices 
+######################################################
+
+
+civmilk_xml<-"http://www.cmegroup.com/trading/agricultural/dairy/class-iv-milk.html"
+
+civmilk <- readHTMLTable(civmilk_xml, stringsAsFactors = FALSE)
+civmilk <- do.call(rbind, civmilk)
+names(civmilk) <- c("Year_Month","Option","Chart","Price","Change","Prior","Open","High","Low","Volume","Limit","Time Updated")
+civmilk$Price<-remove_milk_tick(civmilk$Price)
+civmilk$Prior<-remove_milk_tick(civmilk$Prior)
+Date<-as.POSIXlt(as.Date(civmilk$Year_Month, "%B%d%Y"))
+Date$year<-Date$year+2000
+Date<-as.Date(Date)-19
+civmilk<-data.frame(Date, civmilk$Price, civmilk$Prior)
+names(civmilk)<-c("Date", "Price", "Prior")
+
+j<-dim(civmilk)[1]
+
+for(i in 1:j){
+  
+  if (civmilk$Price[i]==0){
+    civmilk$Price[i]<-civmilk$Prior[i]
+  }
+}
+
+civmilk$Change<-civmilk$Price-civmilk$Prior
+civmilk<-civmilk[which(civmilk$Price >0), ]
+civmilk
+
+
+######################################################
+# Plot the Class IV Prices
+######################################################
+
+plot7<-ggplot(data=civmilk, aes(x=Date, y=Price))+geom_bar(fill="grey",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/cwt.") +ggtitle("CME Class IV Futures Price") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+plot8<-ggplot(data=civmilk, aes(x=Date, y=Change))+geom_bar(fill="red",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/cwt.") +ggtitle("CME Class IV Futures Price Change") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+
+
+
+
+
+
+
+######################################################
+#Scrape Butter futures prices 
+######################################################
+
+
+butter_xml<-"http://www.cmegroup.com/trading/agricultural/dairy/cash-settled-butter.html"
+
+butter <- readHTMLTable(butter_xml, stringsAsFactors = FALSE)
+butter <- do.call(rbind, butter)
+names(butter) <- c("Year_Month","Option","Chart","Price","Change","Prior","Open","High","Low","Volume","Limit","Time Updated")
+butter$Price<-remove_cent_tick(butter$Price)
+butter$Prior<-remove_cent_tick(butter$Prior)
+Date<-as.POSIXlt(as.Date(butter$Year_Month, "%B%d%Y"))
+Date$year<-Date$year+2000
+Date<-as.Date(Date)-19
+butter<-data.frame(Date, butter$Price/100, butter$Prior/100)
+names(butter)<-c("Date", "Price", "Prior")
+
+j<-dim(butter)[1]
+
+for(i in 1:j){
+  
+  if (butter$Price[i]==0){
+    butter$Price[i]<-butter$Prior[i]
+  }
+}
+
+butter$Change<-butter$Price-butter$Prior
+butter<-butter[which(butter$Price >0), ]
+butter
+
+
+######################################################
+# Plot the Butter Prices
+######################################################
+
+plot9<-ggplot(data=butter, aes(x=Date, y=Price))+geom_bar(fill="grey",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/lb.") +ggtitle("CME Butter Futures Price") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+plot10<-ggplot(data=butter, aes(x=Date, y=Change))+geom_bar(fill="red",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Price $/lb.") +ggtitle("CME Butter Futures Price Change") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))
+
+
+
+
+
+
+######################################################
+# Plot the Commodity Prices
+######################################################
+
+
+theplot<-arrangeGrob(plot5,plot6,plot9,plot10,plot1,plot2,plot3,plot4 ,nrow=4,ncol=2)
+
+theplot
+
+
+
+
+
+
+
+
+
