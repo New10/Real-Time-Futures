@@ -8,6 +8,8 @@
 library("XML")
 library("ggplot2")
 library("stringr")
+library("gridExtra")
+
 
 #Function to remove tick labels
 
