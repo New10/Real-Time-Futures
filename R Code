@@ -259,6 +259,28 @@ plot10<-ggplot(data=butter, aes(x=Date, y=Change))+geom_bar(fill="red",colour="w
 
 
 
+####################################################
+# Corn Soybean Ratio
+####################################################
+
+corn$Name<-factor(rep(c("Corn"),each=dim(corn)[1]))
+soybean$Name<-factor(rep(c("Soybean"),each=dim(soybean)[1]))
+corn<-data.table(corn)
+soybean<-data.table(soybean)
+
+setkey(corn, Date)
+setkey(soybean, Date)
+cnb<-soybean[corn, roll=TRUE]
+names(cnb)<-c("Date", "S.Price", "S.Prior", "S.Change", "S.Name", "C.Price", "C.Prior", "C.Change", "C.Name")
+cnb$Ratio<-cnb$S.Price/cnb$C.Price
+cnb
+cnb$lab <- as.character(round(cnb$Ratio, digits=2))
+
+
+plot.ratio<-ggplot(data=cnb, aes(x=Date, y=Ratio))+geom_bar(fill="red4",colour="white", colour="grey", stat="identity") + xlab("Date")+ylab("Corn Soybean Price Ratio") +ggtitle("CME Corn and Soybean Price Ratio") + theme(axis.text.y=element_text(size = rel(2), colour = "black"), axis.text.x=element_text(size = rel(2), colour = "black"), axis.title.x=element_text(size = rel(2)), axis.title.y=element_text(size = rel(2)), plot.title=element_text(size=rel(2)))+
+ geom_text(aes(label=cnb$lab), position=position_dodge(width=0.9), color="white",hjust=2, vjust=.25, angle=90)
+plot.ration
+
 
 
 ######################################################
